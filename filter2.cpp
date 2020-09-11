@@ -38,11 +38,10 @@ int Filter2::sample(int inputValue){
             lastFive[3] = lastFive[4];
             lastFive[4] = inputValue;
             break;
-
-        if(Filter2::numberOfSamples < 5)
-        {
-            Filter2::numberOfSamples++;
-        }
+    }
+    if(Filter2::numberOfSamples < 5)
+    {
+        Filter2::numberOfSamples++;
     }
 
     int sum = 0;
@@ -63,4 +62,15 @@ Filter2::~Filter2(){
         delete[] Filter2::lastFive;
     }
 
+}
+
+void Filter2::printSamples()
+{
+    Serial.print("Samples are: ");
+    for (int i = 0; i < 5; i++)
+    {
+        Serial.print(Filter2::lastFive[i]);
+        Serial.print(" ");
+    }
+    Serial.print("\n");
 }

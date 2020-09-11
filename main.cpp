@@ -4,71 +4,75 @@
 #include <Arduino.h>
 #include <debounce.h>
 #include <filter.h>
-#include <analog_out.h>
+#include <filter2.h>
+#include <PWM_out.h>
 
 bool configureState = false;
-bool firstIteration = true;
+
+bool firstIterationFilter = true;
+bool firstIterationNoFilter = true;
+
+
 bool ISR_choice = true;
 char filterInput = 'u';
 
 int storeData = 0;
 int filteredData = 0;
+float pwmStrength = 0;
 
-int lowerLevel = 0;
-int upperLevel = 0;
 
 
 Analog_in testInput(5); //Analog input á A5
 Digital_in buttonInput(0, ISR_choice); //Button input on pin 12 (PB4) with ISR set on true.
 Debounce testDebounce(500); //debounce set to 500 ms
-Filter testFilter = Filter();    // New Filter, currently set to 0-1023
-Analog_out testOutput(5);
+PWM_out ledTimer;
+Filter2 testFilter = Filter2();
 
+
+float mapfloat(long x, long in_min, long in_max, long out_min, long out_max)
+{
+ return (float)(x - in_min) * (out_max - out_min) / (float)(in_max - in_min) + out_min;
+}
 
 void setup() {
   
   Serial.begin(9600);
   testInput.init();
   buttonInput.init();
-  testFilter.input('l');
 }
 
 void loop() {
+
+  storeData = testInput.read(); //reads the analog input
   
-  if(configureState)
+
+  if(!configureState)
   {
-    if(firstIteration)
-    {
-      Serial.write("You are in configuration mode \n");
-      Serial.println("********************************");
-      Serial.println("* h * High filter (768-1024)   *");
-      Serial.println("* l * Low filter (0-255        *");
-      Serial.println("* b * Band filter (255-768)    *");
-      Serial.println("* u * Unused filter (0 - 1024) *");
-      Serial.println("********************************");
-
-      firstIteration = false;
-    }
-
-    while(Serial.available()){
-      filterInput = Serial.read();
-    }
-
-  }
-  else{
-    firstIteration = true;
-    testFilter.input(filterInput);
-    Serial.write("Analog read:");
-
-    storeData = testInput.read(); //reads the analog input
-    filteredData = testFilter.filterKeepInside(storeData); //converts storedData to filtered Data
+   
+    Serial.write("Analog read: ");
     Serial.println(storeData);
-    Serial.write("Filtered Value: ");
-    Serial.println(filteredData);
-    //testOutput.init(filteredData);
 
-    delay(1000);  // DELAY ONLY USED TO SEE SERIAL EASIER, NOT NEEDED
   }
+  else
+  {
+    storeData = testFilter.sample(storeData); //converts storedData to filtered Data
+    Serial.write("Filtered Value: ");
+    Serial.println(storeData);
+    //testOutput.init(filteredData/4);
+  }
+  testFilter.printSamples();
+
+  
+  pwmStrength = mapfloat(storeData, 0, 1023, 0, 1);
+  // We can't get this part to work properly with the code. 
+  // Everytime We try to use TIMER1 in the PWM class, debounce,
+  // serial and analog read stop working.
+  // We tried changing to use the PWM on a different timer, but then
+  // the PWM class stoped working. 
+
+  //ledTimer.init(pwmStrength);
+
+  delay(1000);  // DELAY ONLY USED TO SEE SERIAL EASIER, NOT NEEDED
 }
 
 ISR(PCINT0_vect){

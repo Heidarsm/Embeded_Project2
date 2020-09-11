@@ -5,6 +5,7 @@ class Filter {
 
     public:
         Filter();
+        
         void input(char inputChar);
         void setMode();
         int getUpperLevel();
