@@ -7,6 +7,14 @@
 #include <filter2.h>
 #include <PWM_out.h>
 
+//********CONNECTIONS****************
+//pin12: pull-up Push button
+//pin3: LED PWM signal
+//A5: Analog Input from sensor
+//***********************************
+
+
+
 bool configureState = false;
 
 bool firstIterationFilter = true;
@@ -28,17 +36,12 @@ Debounce testDebounce(500); //debounce set to 500 ms
 PWM_out ledTimer;
 Filter2 testFilter = Filter2();
 
-
-float mapfloat(long x, long in_min, long in_max, long out_min, long out_max)
-{
- return (float)(x - in_min) * (out_max - out_min) / (float)(in_max - in_min) + out_min;
-}
-
 void setup() {
   
   Serial.begin(9600);
   testInput.init();
   buttonInput.init();
+  ledTimer.init(); // Creates a PWM timer2 for pin 3. 
 }
 
 void loop() {
@@ -63,14 +66,8 @@ void loop() {
   testFilter.printSamples();
 
   
-  pwmStrength = mapfloat(storeData, 0, 1023, 0, 1);
-  // We can't get this part to work properly with the code. 
-  // Everytime We try to use TIMER1 in the PWM class, debounce,
-  // serial and analog read stop working.
-  // We tried changing to use the PWM on a different timer, but then
-  // the PWM class stoped working. 
-
-  //ledTimer.init(pwmStrength);
+  pwmStrength = map(storeData, 0, 1023, 0, 255);
+  ledTimer.set(pwmStrength);
 
   delay(1000);  // DELAY ONLY USED TO SEE SERIAL EASIER, NOT NEEDED
 }
